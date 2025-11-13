@@ -12,12 +12,13 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
-import { Add, Edit, Delete, Subject, Group } from '@mui/icons-material';
+import { Add, Edit, Delete, Subject, Group, Class as ClassIcon } from '@mui/icons-material';
 import { journalService } from '../services/journal';
 import { JournalEntry, JournalEntryCreate } from '../types';
-import EntryForm from '../components/EntryForm';
 import SubjectManager from '../components/SubjectManager';
 import StudentManager from '../components/StudentManager';
+import ClassManager from '../components/ClassManager';
+import EnhancedEntryForm from '../components/EnhancedEntryForm';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -39,6 +40,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
   );
 };
 
+
 const Journal: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -47,6 +49,7 @@ const Journal: React.FC = () => {
   const [formOpen, setFormOpen] = useState<boolean>(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [currentTab, setCurrentTab] = useState<number>(0);
+  
 
   useEffect(() => {
     loadData();
@@ -122,9 +125,9 @@ const Journal: React.FC = () => {
   };
 
   const handleEditClick = (entry: JournalEntry): void => {
-    setEditingEntry(entry);
-    setFormOpen(true);
-  };
+  setEditingEntry(entry);
+  setFormOpen(true);
+};
 
   const handleFormClose = (): void => {
     setFormOpen(false);
@@ -148,12 +151,13 @@ const Journal: React.FC = () => {
   }
 
   return (
-    <Box>
-      <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab icon={<Subject />} label="Журнал" />
-        <Tab icon={<Group />} label="Ученики" />
-        <Tab icon={<Subject />} label="Предметы" />
-      </Tabs>
+<Box>
+  <Tabs value={currentTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+    <Tab icon={<Subject />} label="Журнал" />
+    <Tab icon={<ClassIcon />} label="Классы" />
+    <Tab icon={<Group />} label="Ученики" />
+    <Tab icon={<Subject />} label="Предметы" />
+  </Tabs>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -218,10 +222,23 @@ const Journal: React.FC = () => {
                   <Typography variant="body2" paragraph>
                     <strong>Домашнее задание:</strong> {entry.homework}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Посещаемость:</strong> 
-                    <Box component="span" sx={{ whiteSpace: 'pre-wrap', display: 'block', mt: 0.5 }}>
-                      {entry.attendance}
+                  <Typography variant="body2" paragraph>
+                      <strong>Посещаемость:</strong> 
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                        {Object.entries(entry.attendance || {}).map(([studentId, status]) => {
+                              
+                              const studentName = `Ученик ${studentId}`; 
+                              
+                              return (
+                                <Chip
+                                  key={studentId}
+                                  label={`${studentName}: ${status === 'present' ? '✅' : '❌'}`}
+                                  color={status === 'present' ? 'success' : 'error'}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              );
+                            })}
                     </Box>
                   </Typography>
                 </CardContent>
@@ -236,18 +253,25 @@ const Journal: React.FC = () => {
           </Typography>
         )}
       </TabPanel>
+      
+      {/* Вкладка классов */}
+      <TabPanel value={currentTab} index={1}>
+        <ClassManager />
+      </TabPanel>
 
       {/* Вкладка учеников */}
-      <TabPanel value={currentTab} index={1}>
+      <TabPanel value={currentTab} index={2}>
         <StudentManager />
       </TabPanel>
 
       {/* Вкладка предметов */}
-      <TabPanel value={currentTab} index={2}>
+      <TabPanel value={currentTab} index={3}>
         <SubjectManager onSubjectsUpdate={loadData} />
       </TabPanel>
 
-      <EntryForm
+      
+
+      <EnhancedEntryForm
         open={formOpen}
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}

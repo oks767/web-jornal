@@ -25,22 +25,33 @@ export interface SubjectCreate {
   name: string;
 }
 
+
 export interface JournalEntry {
   id: number;
   subject_id: number;
+  class_id: number;  // Добавьте это свойство
   date: string;
   topic: string;
-  attendance: string;
+  attendance: { [studentId: number]: string };
   homework: string;
-  subject_name?: string; // Добавим для отображения названия предмета
+  grades: { [studentId: number]: GradeInfo };  // Добавьте это свойство
+  subject_name?: string;
+  class_name?: string;
 }
 
 export interface JournalEntryCreate {
   subject_id: number;
+  class_id: number;  // Добавьте это свойство
   date: string;
   topic: string;
-  attendance: string;
+  attendance: { [studentId: number]: string };
   homework: string;
+  grades: { [studentId: number]: GradeInfo };  // Добавьте это свойство
+}
+
+export interface GradeInfo {
+  grade?: string;
+  comment?: string;
 }
 
 export interface AuthContextType {
@@ -51,17 +62,34 @@ export interface AuthContextType {
   loading: boolean;
 }
 
+
+export interface Class {
+  id: number;
+  name: string;
+}
+
+export interface ClassCreate {
+  name: string;
+}
+
 export interface Student {
   id: number;
   first_name: string;
   last_name: string;
   email: string;
+  class_id: number;
+  class_name?: string;
 }
 
 export interface StudentCreate {
   first_name: string;
   last_name: string;
   email: string;
+  class_id: number;
+}
+
+export interface ClassWithStudents extends Class {
+  students: Student[];
 }
 
 export interface StudentWithSubjects extends Student {

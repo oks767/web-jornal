@@ -11,33 +11,44 @@ import {
   Card,
   CardContent,
   IconButton,
-  Alert
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { Add, Delete, Person } from '@mui/icons-material';
-import { Student, StudentCreate } from '../types';
+import { Student, StudentCreate, ClassWithStudents } from '../types';
 import { studentService } from '../services/students';
+import { classService } from '../services/classes';
 
 const StudentManager: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<ClassWithStudents[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<StudentCreate>({
     first_name: '',
     last_name: '',
-    email: ''
+    email: '',
+    class_id: 0
   });
 
   useEffect(() => {
-    loadStudents();
+    loadData();
   }, []);
 
-  const loadStudents = async (): Promise<void> => {
+  const loadData = async (): Promise<void> => {
     try {
-      const data = await studentService.getStudents();
-      setStudents(data);
+      const [studentsData, classesData] = await Promise.all([
+        studentService.getStudents(),
+        classService.getClasses()
+      ]);
+      setStudents(studentsData);
+      setClasses(classesData);
     } catch (err) {
-      setError('Не удалось загрузить список учеников');
+      setError('Не удалось загрузить данные');
     }
   };
 
@@ -46,8 +57,8 @@ const StudentManager: React.FC = () => {
       setLoading(true);
       await studentService.createStudent(formData);
       setDialogOpen(false);
-      setFormData({ first_name: '', last_name: '', email: '' });
-      loadStudents();
+      setFormData({ first_name: '', last_name: '', email: '', class_id: 0 });
+      loadData();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Не удалось добавить ученика');
     } finally {
@@ -59,7 +70,7 @@ const StudentManager: React.FC = () => {
     if (window.confirm('Вы уверены, что хотите удалить этого ученика из вашего класса?')) {
       try {
         await studentService.removeStudent(studentId);
-        loadStudents();
+        loadData();
       } catch (err) {
         setError('Не удалось удалить ученика');
       }
@@ -74,12 +85,19 @@ const StudentManager: React.FC = () => {
           variant="contained"
           startIcon={<Add />}
           onClick={() => setDialogOpen(true)}
+          disabled={classes.length === 0}
         >
           Добавить ученика
         </Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {classes.length === 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Сначала создайте классы, чтобы добавлять учеников
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
         {students.map((student) => (
@@ -94,6 +112,11 @@ const StudentManager: React.FC = () => {
               <Typography variant="body2" color="textSecondary">
                 {student.email}
               </Typography>
+              {student.class_name && (
+                <Typography variant="body2" color="primary" sx={{ mt: 0.5 }}>
+                  Класс: {student.class_name}
+                </Typography>
+              )}
               <IconButton
                 size="small"
                 onClick={() => handleRemoveStudent(student.id)}
@@ -107,9 +130,9 @@ const StudentManager: React.FC = () => {
         ))}
       </Box>
 
-      {students.length === 0 && (
+      {students.length === 0 && classes.length > 0 && (
         <Typography textAlign="center" sx={{ mt: 4 }}>
-          В вашем классе пока нет учеников
+          В ваших классах пока нет учеников
         </Typography>
       )}
 
@@ -137,6 +160,20 @@ const StudentManager: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
             />
+            <FormControl fullWidth required>
+              <InputLabel>Класс</InputLabel>
+              <Select
+                value={formData.class_id}
+                label="Класс"
+                onChange={(e) => setFormData({ ...formData, class_id: Number(e.target.value) })}
+              >
+                {classes.map((classItem) => (
+                  <MenuItem key={classItem.id} value={classItem.id}>
+                    {classItem.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -144,7 +181,7 @@ const StudentManager: React.FC = () => {
           <Button 
             onClick={handleCreateStudent} 
             variant="contained"
-            disabled={loading}
+            disabled={loading || !formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim() || !formData.class_id}
           >
             Добавить
           </Button>

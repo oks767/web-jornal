@@ -7,8 +7,8 @@ export const studentService = {
     return response.data;
   },
 
-  async getStudents(): Promise<StudentWithSubjects[]> {
-    const response = await api.get<StudentWithSubjects[]>('/students');
+  async getStudents(): Promise<Student[]> {
+    const response = await api.get<Student[]>('/students');
     return response.data;
   },
 
